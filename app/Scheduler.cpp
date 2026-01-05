@@ -9,6 +9,7 @@ namespace Scheduler
 	// Processes
 
     // Helper to get process id from string.
+    //TODO: Comment better.
     static DWORD get_process_id(const std::wstring& process_name)
     {
         DWORD process_id = 0; // Default
@@ -52,11 +53,13 @@ namespace Scheduler
 
 	void run_process(const std::wstring& process)
 	{
+        /*
         STARTUPINFOW startup_info = {};
         PROCESS_INFORMATION process_information = {};
         startup_info.cb = sizeof(startup_info);
 
         CreateProcessW(process.c_str(), NULL, NULL, NULL, FALSE, 0, NULL, NULL, &startup_info, &process_information);
+        */
 	}
 
 	void close_process(const std::wstring& process)
