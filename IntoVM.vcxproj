@@ -127,11 +127,22 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <PostBuildEvent>
+      <Command>if "$(Configuration)" == "Release" (
+    if exist "$(SolutionDir)release" rmdir /S /Q "$(SolutionDir)release"
+    mkdir "$(SolutionDir)release"
+    mkdir "$(SolutionDir)release\processes"
+    xcopy "$(OutDir)IntoVM.exe" "$(SolutionDir)release\" /Y
+    if exist "$(ProjectDir)app\config.json" xcopy "$(ProjectDir)app\config.json" "$(SolutionDir)release\" /Y
+    if exist "$(ProjectDir)app\processes" xcopy "$(ProjectDir)app\processes" "$(SolutionDir)release\processes\" /E /I /Y
+)</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -142,6 +153,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -149,6 +161,16 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <PostBuildEvent>
+      <Command>if "$(Configuration)" == "Release" (
+    if exist "$(SolutionDir)release" rmdir /S /Q "$(SolutionDir)release"
+    mkdir "$(SolutionDir)release"
+    mkdir "$(SolutionDir)release\processes"
+    xcopy "$(OutDir)IntoVM.exe" "$(SolutionDir)release\" /Y
+    if exist "$(ProjectDir)app\config.json" xcopy "$(ProjectDir)app\config.json" "$(SolutionDir)release\" /Y
+    if exist "$(ProjectDir)app\processes" xcopy "$(ProjectDir)app\processes" "$(SolutionDir)release\processes\" /E /I /Y
+)</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
