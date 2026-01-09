@@ -34,9 +34,12 @@ namespace blacklist
         L"vmwaretray.exe",
         L"vmwareuser.exe",
         L"vmacthlp.exe",
+
         L"vboxservice.exe",   // VirtualBox
         L"vboxtray.exe",
+
         L"xenservice.exe",    // Xen
+
         L"qemu-ga.exe",       // QEMU Guest Agent
 	};
 

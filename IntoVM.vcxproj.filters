@@ -35,6 +35,9 @@
     <ClInclude Include="app\header\scheduler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="app\cfg\Config.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="app\config.json" />

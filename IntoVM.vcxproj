@@ -24,6 +24,7 @@
     <ClCompile Include="app\Spoofer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="app\cfg\Config.h" />
     <ClInclude Include="app\header\blacklist.h" />
     <ClInclude Include="app\header\scheduler.h" />
     <ClInclude Include="app\header\spoofer.h" />

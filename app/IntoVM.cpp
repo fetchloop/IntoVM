@@ -2,13 +2,12 @@
 
 #include "header/blacklist.h"
 #include "header/spoofer.h"
-
-using std::cout;
+#include "header/scheduler.h"
 
 int main()
 {
 
-	cout << "IntoVM Starting...";
+	std::cout << "IntoVM Starting..." << std::endl;
 
 
 

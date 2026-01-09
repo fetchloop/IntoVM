@@ -2,14 +2,11 @@
 
 #include <Windows.h>
 #include <TlHelp32.h>
+#include <string>
 
 namespace Scheduler
 {
-
-	// Processes
-
     // Helper to get process id from string.
-    //TODO: Comment better.
     static DWORD get_process_id(const std::wstring& process_name)
     {
         DWORD process_id = 0; // Default
@@ -27,14 +24,16 @@ namespace Scheduler
         };
         std::unique_ptr<void, decltype(close_handle)> handle_guard(snap_shot, close_handle);
 
+        // Store process information of snapshot.
         PROCESSENTRY32W entry = {};
         entry.dwSize = sizeof(decltype(entry));
 
-        if (Process32FirstW(snap_shot, &entry) == TRUE)
+        if (Process32FirstW(snap_shot, &entry) == TRUE) // First process in snapshot
         {
+            // Iterate all processes in the snapshot.
             do
             {
-                // If the process id matches what we're searching for, set the id var.
+                // Check if the process name matches the query.
                 if (_wcsicmp(process_name.c_str(), entry.szExeFile) == 0)
                 {
                     process_id = entry.th32ProcessID;
@@ -46,21 +45,42 @@ namespace Scheduler
         return process_id;
     }
 
+    // Returns whether a process of x name is currently running or not.
     bool is_process_running(const std::wstring& process)
     {
         return get_process_id(process) != 0;
     }
 
-	void run_process(const std::wstring& process)
-	{
-        /*
-        STARTUPINFOW startup_info = {};
-        PROCESS_INFORMATION process_information = {};
-        startup_info.cb = sizeof(startup_info);
+    void run_process(const std::wstring& process)
+    {
+        // Get the directory where IntoVM is located.
+        wchar_t exe_path[MAX_PATH];
+        GetModuleFileNameW(NULL, exe_path, MAX_PATH);
 
-        CreateProcessW(process.c_str(), NULL, NULL, NULL, FALSE, 0, NULL, NULL, &startup_info, &process_information);
-        */
-	}
+        // Remove the executable name to get just the directory.
+        std::wstring exe_dir = exe_path;
+        size_t last_slash = exe_dir.find_last_of(L"\\/");
+        if (last_slash != std::wstring::npos)
+            exe_dir = exe_dir.substr(0, last_slash + 1);
+
+        // Build full path to the process.
+        std::wstring full_path = exe_dir + L"processes\\" + process;
+
+        // Build command line with parent PID.
+        std::wstring cmdLine = full_path + L" " + std::to_wstring(GetCurrentProcessId());
+
+        STARTUPINFOW si = {};
+        PROCESS_INFORMATION pi = {};
+        si.cb = sizeof(si);
+
+        CreateProcessW(NULL, cmdLine.data(), NULL, NULL, FALSE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi);
+
+        // Clean up handles.
+        CloseHandle(pi.hProcess);
+        CloseHandle(pi.hThread);
+
+        std::wcout << L"[Scheduler] Started process: " << process << std::endl;
+    }
 
 	void close_process(const std::wstring& process)
 	{
