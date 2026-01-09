@@ -89,3 +89,34 @@ Runs quietly in the background using minimal system resources, you won't notice 
 
 <br>
 <small><i>Yes this description was written using an LLM, but none of the code has been. Vibe coding is lame, and I do not support it.</i></small>
+<small><i>The code inside any of the processes .exe files is as following.</i></small>
+```c++
+#include <Windows.h>
+#include <TlHelp32.h>
+#include <iostream>
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+{
+    // Parse parent PID from command line
+    DWORD parent_pid = 0;
+    if (lpCmdLine && lpCmdLine[0] != '\0')
+    {
+        parent_pid = std::strtoul(lpCmdLine, nullptr, 10);
+    }
+
+    if (parent_pid == 0)
+        return 1;  // No valid PID provided
+
+    // Open handle at startup
+    HANDLE hParent = OpenProcess(SYNCHRONIZE, FALSE, parent_pid);
+    if (hParent == NULL)
+        return 1;  // Parent already dead or invalid
+
+    // Wait for parent to terminate
+    WaitForSingleObject(hParent, INFINITE);
+
+    // Parent died, exit
+    CloseHandle(hParent);
+    return 0;
+}
+```
