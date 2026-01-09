@@ -1,4 +1,5 @@
-#include <iostream> // Input/Output.
+// Input/Output.
+#include <iostream>
 
 // Sleep
 #include <chrono>
@@ -15,6 +16,9 @@
 // Declare global tracking vectors.
 std::vector<std::wstring> added_keys;
 std::vector<std::wstring> started_processes;
+
+// Console Signaling
+#include <Windows.h>
 
 // Shell Execution ( Request Elevation ).
 #include <shellapi.h>
@@ -107,6 +111,11 @@ void cleanup()
 		Scheduler::close_process(process);
 
 	started_processes.clear(); // Clear the vector.
+
+	// Windows only gives about 5 seconds before force closing, so just display text for 4s.
+	std::cout << "[Cleanup] Successfully cleared modified registry keys and terminated processes. Closing in 4 seconds..." << std::endl;
+	std::this_thread::sleep_for(std::chrono::milliseconds(4000));
+	exit(0);
 }
 
 BOOL WINAPI console_handler(DWORD signal)
