@@ -113,8 +113,10 @@ void cleanup()
 void signal_handler(int signal)
 {
 	std::cout << "\n[IntoVM] Ctrl+C detected, cleaning up..." << std::endl;
-	cleanup(); // Clean registry and processes before exiting.
-	exit(0); // Graceful Exit.
+	cleanup();
+	std::cout << "[IntoVM] Cleanup complete. Exiting in 10 seconds..." << std::endl;
+	Sleep(10000);
+	exit(0);
 }
 
 bool is_elevated()
