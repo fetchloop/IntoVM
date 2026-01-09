@@ -1,5 +1,4 @@
 #include <iostream> // Input/Output.
-#include <csignal> // Signal Handler.
 
 // Sleep
 #include <chrono>
@@ -22,7 +21,7 @@ std::vector<std::wstring> started_processes;
 
 // Forward Declaration.
 void cleanup();
-void signal_handler(int);
+BOOL WINAPI console_handler(DWORD);
 bool is_elevated();
 bool request_elevation();
 
@@ -83,7 +82,7 @@ int main()
 	}
 
 	// Setup Cleanup Handler.
-	signal(SIGINT, signal_handler);
+	SetConsoleCtrlHandler(console_handler, TRUE);
 	
 	// KeepAlive
 	std::cout << "IntoVM successfully set up.\nPress Ctrl+C to exit..." << std::endl;
@@ -110,13 +109,19 @@ void cleanup()
 	started_processes.clear(); // Clear the vector.
 }
 
-void signal_handler(int signal)
+BOOL WINAPI console_handler(DWORD signal)
 {
-	std::cout << "\n[IntoVM] Ctrl+C detected, cleaning up..." << std::endl;
-	cleanup();
-	std::cout << "[IntoVM] Cleanup complete. Exiting in 10 seconds..." << std::endl;
-	Sleep(10000);
-	exit(0);
+	switch (signal)
+	{
+	case CTRL_C_EVENT:
+	case CTRL_CLOSE_EVENT:
+	case CTRL_LOGOFF_EVENT:
+	case CTRL_SHUTDOWN_EVENT:
+		std::cout << "\n[IntoVM] Exit detected, cleaning up..." << std::endl;
+		cleanup();
+		return TRUE;
+	}
+	return FALSE;
 }
 
 bool is_elevated()
