@@ -1,11 +1,11 @@
 #pragma once
 
-#include <iostream>
+#include <string> // wstring safety.
 
 namespace Scheduler
 {
 	// Processes
 	bool is_process_running(const std::wstring& process);
-	void run_process(const std::wstring& process);
-	void close_process(const std::wstring& process);
+	bool run_process(const std::wstring& process);
+	bool close_process(const std::wstring& process);
 }

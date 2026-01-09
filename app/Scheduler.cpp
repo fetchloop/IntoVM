@@ -2,7 +2,19 @@
 
 #include <Windows.h>
 #include <TlHelp32.h>
+#include <memory> // unique_ptr
 #include <string>
+
+// Simple Handle Deletion Wrapper
+struct HandleDeleter
+{
+    void operator()(HANDLE h) const
+    {
+        if (h != NULL && h != INVALID_HANDLE_VALUE)
+            CloseHandle(h);
+    }
+};
+using UniqueHandle = std::unique_ptr<void, HandleDeleter>;
 
 namespace Scheduler
 {
@@ -16,13 +28,8 @@ namespace Scheduler
         if (snap_shot == INVALID_HANDLE_VALUE) // If the snapshot is invalid, return early.
             return process_id;
 
-        // RAII Wrapper that'll close our handle as soon as we go out of scope.
-        auto close_handle = [](HANDLE h)
-        {
-            if (h != INVALID_HANDLE_VALUE)
-                CloseHandle(h);
-        };
-        std::unique_ptr<void, decltype(close_handle)> handle_guard(snap_shot, close_handle);
+        // Helper to close handle if we go out of scope.
+        UniqueHandle handle_guard(snap_shot);
 
         // Store process information of snapshot.
         PROCESSENTRY32W entry = {};
@@ -51,11 +58,17 @@ namespace Scheduler
         return get_process_id(process) != 0;
     }
 
-    void run_process(const std::wstring& process)
+    bool run_process(const std::wstring& process)
     {
         // Get the directory where IntoVM is located.
         wchar_t exe_path[MAX_PATH];
-        GetModuleFileNameW(NULL, exe_path, MAX_PATH);
+
+        DWORD found_path = GetModuleFileNameW(NULL, exe_path, MAX_PATH);
+        if (found_path == 0)
+        {
+            std::wcout << "[Scheduler] " << "failed to find file path to '" << process << "'\n";
+            return false;
+        }
 
         // Remove the executable name to get just the directory.
         std::wstring exe_dir = exe_path;
@@ -73,32 +86,50 @@ namespace Scheduler
         PROCESS_INFORMATION pi = {};
         si.cb = sizeof(si);
 
-        CreateProcessW(NULL, cmdLine.data(), NULL, NULL, FALSE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi);
+        BOOL successful_run = CreateProcessW(NULL, cmdLine.data(), NULL, NULL, FALSE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi);
+
+        if (!successful_run)
+        {
+            std::wcout << "[Scheduler] " << " failed to start process '" << process << "' due to " << GetLastError() << ".\n";
+            return false;
+        }
 
         // Clean up handles.
         CloseHandle(pi.hProcess);
         CloseHandle(pi.hThread);
 
         std::wcout << L"[Scheduler] Started process: " << process << std::endl;
+        return true;
     }
 
-	void close_process(const std::wstring& process)
-	{
+    bool close_process(const std::wstring& process)
+    {
         // Get the process id, and return early if it's not found.
         DWORD process_id = get_process_id(process);
-        if (process_id == 0) return;
+        if (process_id == 0)
+            return false;
 
         // Open a handle to the process, and if it's invalid, return.
         HANDLE process_handle = OpenProcess(PROCESS_TERMINATE, FALSE, process_id);
-        if (process_handle == NULL) return;
+        if (process_handle == NULL)
+        {
+            std::wcout << "[Scheduler] Failed to open process '" << process << "', error: " << GetLastError() << "\n";
+            return false;
+        }
+
+        // Ensures handle closes.
+        UniqueHandle handle_guard(process_handle);
 
         // Terminate the process.
-        TerminateProcess(process_handle, 0);
-        CloseHandle(process_handle);
+        BOOL terminated = TerminateProcess(process_handle, 0);
+        if (!terminated)
+        {
+            std::wcout << "[Scheduler] Failed to terminate '" << process << "', error: " << GetLastError() << "\n";
+            return false;
+        }
 
         std::wcout << "[Scheduler] Terminated process: " << process << std::endl;
-
-        return;
-	}
+        return true;
+    }
 
 }

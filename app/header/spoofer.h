@@ -6,6 +6,6 @@ namespace Spoofer
 {
 	// Registry Keys
 	bool regkey_exists(const std::wstring& name);
-	void add_regkey(const std::wstring& key_name);
-	void remove_regkey(const std::wstring& key_name);
+	bool add_regkey(const std::wstring& key_name);
+	bool remove_regkey(const std::wstring& key_name);
 }

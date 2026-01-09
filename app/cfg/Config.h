@@ -1,3 +1,5 @@
+#pragma once
+
 #include <iostream>
 
 #include <string>
@@ -10,7 +12,7 @@ struct Config
     bool spoof_processes = true;
 };
 
-bool parse_bool_from_key(const std::string& content, const std::string& key)
+inline static bool parse_bool_from_key(const std::string& content, const std::string& key)
 {
     size_t pos_reg = content.find("\""+key+"\"");
     if (pos_reg != std::string::npos)
@@ -32,7 +34,7 @@ bool parse_bool_from_key(const std::string& content, const std::string& key)
     return false;
 }
 
-Config read_config()
+inline Config read_config()
 {
 
     Config config {};  // Default Initializer

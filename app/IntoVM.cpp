@@ -1,6 +1,10 @@
 #include <iostream> // Input/Output.
 #include <csignal> // Signal Handler.
 
+// Sleep
+#include <chrono>
+#include <thread>
+
 // Headers.
 #include "header/blacklist.h"
 #include "header/spoofer.h"
@@ -13,13 +17,30 @@
 std::vector<std::wstring> added_keys;
 std::vector<std::wstring> started_processes;
 
+// Shell Execution ( Request Elevation ).
+#include <shellapi.h>
+
 // Forward Declaration.
 void cleanup();
 void signal_handler(int);
+bool is_elevated();
+bool request_elevation();
 
 int main()
 {
+	// Simple running as admin check.
+	if (!is_elevated())
+	{
+		std::cout << "[IntoVM] Not running as administrator. Requesting elevation..." << std::endl;
 
+		if (request_elevation())
+			return 0;  // Exit this instance, elevated one takes over
+		else
+		{
+			std::cerr << "[IntoVM] Failed to elevate. Please run as administrator." << std::endl;
+			return 1;
+		}
+	}
 	std::cout << "IntoVM Starting..." << std::endl;
 
 	// Read config values.
@@ -38,8 +59,8 @@ int main()
 			}
 
 			// Create registry key, and add it to the tracker.
-			Spoofer::add_regkey(key);
-			added_keys.push_back(key);
+			if(bool added = Spoofer::add_regkey(key); added)
+				added_keys.push_back(key);
 		}
 	}
 
@@ -56,8 +77,8 @@ int main()
 				continue; // Skip as it's already running.
 			}
 			
-			Scheduler::run_process(process);
-			started_processes.push_back(process);
+			if(bool started = Scheduler::run_process(process); started)
+				started_processes.push_back(process);
 		}
 	}
 
@@ -68,7 +89,7 @@ int main()
 	std::cout << "IntoVM successfully set up.\nPress Ctrl+C to exit..." << std::endl;
 	while (true)
 	{
-		Sleep(1000);
+		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 	}
 
 	return 0;
@@ -76,22 +97,17 @@ int main()
 
 void cleanup()
 {
-	// Remove added registry keys.
+	// Loop through all added registry keys and remove them
 	for (const auto& key : added_keys)
-	{
-		// Remove the key.
 		Spoofer::remove_regkey(key);
-		std::wcout << "[Cleanup] " << "removed Registry Key '" << key << "'\n";
-	}
-	added_keys.clear(); // Clear the added keys array.
 
+	added_keys.clear(); // Clear the vector.
 
+	// Loop through all started processes and terminate them.
 	for (const auto& process : started_processes)
-	{
 		Scheduler::close_process(process);
-		std::wcout << "[Cleanup] " << "terminated process '" << process << "'\n";
-	}
-	started_processes.clear(); // Ditto.
+
+	started_processes.clear(); // Clear the vector.
 }
 
 void signal_handler(int signal)
@@ -99,4 +115,51 @@ void signal_handler(int signal)
 	std::cout << "\n[IntoVM] Ctrl+C detected, cleaning up..." << std::endl;
 	cleanup(); // Clean registry and processes before exiting.
 	exit(0); // Graceful Exit.
+}
+
+bool is_elevated()
+{
+	HANDLE token = NULL;
+
+	if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &token))
+		return false;
+
+	TOKEN_ELEVATION elevation = {};
+	DWORD size = sizeof(elevation);
+
+	BOOL success = GetTokenInformation(token, TokenElevation, &elevation, sizeof(elevation), &size);
+
+	CloseHandle(token);
+
+	return success && elevation.TokenIsElevated;
+}
+
+bool request_elevation()
+{
+	wchar_t exe_path[MAX_PATH];
+
+	if (GetModuleFileNameW(NULL, exe_path, MAX_PATH) == 0)
+		return false;
+
+	SHELLEXECUTEINFOW sei = {};
+	sei.cbSize = sizeof(sei);
+	sei.lpVerb = L"runas"; // Request elevation
+	sei.lpFile = exe_path; // Path to the app's exe
+	sei.lpParameters = nullptr;
+	sei.nShow = SW_SHOWNORMAL;
+	sei.fMask = SEE_MASK_NOCLOSEPROCESS;
+
+	if (!ShellExecuteExW(&sei))
+	{
+		DWORD error = GetLastError();
+
+		if (error == ERROR_CANCELLED)
+			std::cerr << "[IntoVM] User declined UAC prompt." << std::endl;
+		else
+			std::cerr << "[IntoVM] ShellExecuteEx failed with error: " << error << std::endl;
+
+		return false;
+	}
+
+	return true;
 }
