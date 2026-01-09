@@ -90,7 +90,7 @@ Runs quietly in the background using minimal system resources, you won't notice 
 <br>
 <small><i>Yes this description was written using an LLM, but none of the code has been. Vibe coding is lame, and I do not support it.</i></small>
 <small><i>The code inside any of the processes .exe files is as following.</i></small>
-```c++
+```
 #include <Windows.h>
 #include <TlHelp32.h>
 #include <iostream>
